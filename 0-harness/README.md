@@ -12,21 +12,21 @@ By the end of this tutorial, you will have:
 
 ## Key Ideas
 
-* Instead of learning about kernels first, we start by understanding what happens around a CUDA kernel: compilation, launches, synchronization, correctness checks, and measurement.
-* We will implement a very simple GEMM kernel, but everything around it should be production-ready (i.e., ready to reuse in research or industry).
+- Instead of learning about kernels first, we start by understanding what happens around a CUDA kernel: compilation, launches, synchronization, correctness checks, and measurement.
+- We will implement a very simple GEMM kernel, but everything around it should be production-ready (i.e., ready to reuse in research or industry).
 
 ## Readings
 
-* Intro to CUDA C++
-  * https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/intro-to-cuda-cpp.html
-  * Ignore "2.1.3.1. Unified Memory" section and everything related to it. We'll stick to explicit memory management only.
-* CUDA C++ Best Practices Guide - Timing section:
-  * Read "9.1 Timing" (CPU timers vs CUDA events, plus the basic event timing example).
-  * https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#timing
+- Intro to CUDA C++
+  - [https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/intro-to-cuda-cpp.html](https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/intro-to-cuda-cpp.html)
+  - Ignore "2.1.3.1. Unified Memory" section and everything related to it. We'll stick to explicit memory management only.
+- CUDA C++ Best Practices Guide - Timing section:
+  - Read "9.1 Timing" (CPU timers vs CUDA events, plus the basic event timing example).
+  - [https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#timing](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#timing)
 
 ## TODOs
 
-You will follow these steps, and implement everything in a single file: [`kernel.cu`](kernel.cu).
+You will follow these steps, and implement everything in a single file: `[kernel.cu](kernel.cu)`.
 
 ### Step 1. CPU GEMM
 
@@ -36,23 +36,24 @@ You will follow these steps, and implement everything in a single file: [`kernel
 
 All matrices use row-major indexing. Think of it as `row * stride + col` where each row is stored as one contiguous block:
 
-* `A` is **M×K** and `A(i,k)` lives at `A[i*K + k]`
-* `B` is **K×N** and `B(k,j)` lives at `B[k*N + j]`
-* `C` is **M×N** and `C(i,j)` lives at `C[i*N + j]`
+- `A` is **M×K** and `A(i,k)` lives at `A[i*K + k]`
+- `B` is **K×N** and `B(k,j)` lives at `B[k*N + j]`
+- `C` is **M×N** and `C(i,j)` lives at `C[i*N + j]`
 
 To verify indexing is correct, start from a tiny example (2×2 matrices) and manually work out one or two expected outputs before trusting the random test.
 
 **Tasks**
 
 1. Implement `fill_random(x, seed)`
-   * Fill every element once with uniform random values; you can simply use `dist(rng)`.
+  - Fill every element once with uniform random values; you can simply use `dist(rng)`.
 2. Implement `gemm_cpu_naive(A, B, C, M, N, K)`
-   * loops: `i` in `[0,M)`, `j` in `[0,N)`, `k` in `[0,K)`
+  - loops: `i` in `[0,M)`, `j` in `[0,N)`, `k` in `[0,K)`
 3. Implement `print_stats(name, x)`
 4. In `main`, allocate and initialize memory.
-   * Allocate `h_A` of size `M*K`, `h_B` size `K*N`, `h_C` size `M*N`, `h_Cref` size `M*N`
-   * Fill `h_A`, `h_B` with random values using `fill_random`
-   * Run CPU GEMM into `h_C_ref`, and print stats of `C_ref`.
+  - Allocate `h_A` of size `M*K`, `h_B` size `K*N`, `h_C` size `M*N`, `h_C_ref` size `M*N`
+    - `h_C` is later used to hold the results of GPU GEMM. Just allocate and ignore for now.
+  - Fill `h_A`, `h_B` with random values using `fill_random`
+  - Run CPU GEMM into `h_C_ref` and print its stats.
 5. Run `make run`. Ensure that you get correct results!
 
 Keep your first test small (e.g. `M=N=K=256`) so CPU reference runs quickly.
@@ -72,7 +73,7 @@ __global__ void gemm_gpu_naive(const float* A, const float* B, float* C,
 
 The operands are in same row-major layout as the CPU:
 
-* `A` points to `M*K` floats, `B` points to `K*N` floats, `C` points to `M*N` floats.
+- `A` points to `M*K` floats, `B` points to `K*N` floats, `C` points to `M*N` floats.
 
 Inside the kernel, you can check the thread ID and the block ID to check if you are within bounds:
 
@@ -84,10 +85,10 @@ if (i >= M || j >= N) return;
 
 Where:
 
-* `blockIdx` chooses the block in the 2D grid
-* `threadIdx` chooses your thread inside the block
-* Every thread maps to one output element `C(i,j)`
-* With a 16x16 block, for example, each block can compute up to 256 outputs.
+- `blockIdx` chooses the block in the 2D grid
+- `threadIdx` chooses your thread inside the block
+- Every thread maps to one output element `C(i,j)`
+- With a 16x16 block, for example, each block can compute up to 256 outputs.
 
 The kernel perform a naive GEMM with a single for-loop.
 
