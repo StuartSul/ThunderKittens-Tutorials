@@ -112,7 +112,7 @@ On the host side, you can launch the kernel with:
 ```cpp
 dim3 block(16, 16);
 dim3 grid(ceil_div(N, block.x), ceil_div(M, block.y));
-gemm_gpu_naive<<<grid, block>>>(dA, dB, dC, M, N, K);
+gemm_gpu_naive<<<grid, block>>>(d_A, d_B, d_C, M, N, K);
 ```
 
 **Tasks**
